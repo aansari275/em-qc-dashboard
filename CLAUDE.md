@@ -1,0 +1,194 @@
+# Eastern Mills QC Dashboard
+
+Quality Control Dashboard with Inspection Calendar and full product documentation access for QC teams.
+
+## URLs
+
+| Environment | URL |
+|-------------|-----|
+| **Production** | https://em-qc-dashboard.netlify.app |
+| **GitHub** | https://github.com/aansari275/em-qc-dashboard |
+
+## Purpose
+
+QC (Quality Control) team uses this app to:
+1. **View 2-week inspection calendar** - See all scheduled inspections in a grid view
+2. **Filter by company** - EMPL, EHI, or All
+3. **Access full product documentation** - When clicking a product:
+   - TED (Technical Execution Document)
+   - Labels (Main, Care, Size, Hangtag)
+   - Test Reports
+   - Certifications (Buyer + Company)
+   - Packaging Instructions (DWP)
+   - Documents
+   - Photos
+4. **Mark inspections complete** - Tap to mark done
+
+## Tech Stack
+
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS v4
+- **State:** TanStack Query (React Query)
+- **Backend:** Netlify Functions (serverless)
+- **Database:** Firebase Firestore (shared with Orders app)
+- **Hosting:** Netlify
+
+## Features
+
+### Inspection Calendar
+- 2-week grid view (Mon-Sun x 2 weeks)
+- Navigate forward/back weeks
+- "Today" button for quick return
+- Stats: scheduled vs completed
+- Auto-refresh every 60 seconds
+- Color-coded status (blue=scheduled, green=completed, amber=rescheduled)
+
+### OPS Detail Modal
+When clicking an inspection:
+- Full order details (PO, dates, quantities)
+- List of all products in the OPS
+- Click any product for full documentation
+
+### Product Documentation Modal
+When clicking a product:
+- **Overview** - Quick stats, status badges, technical description
+- **TED** - Full technical specs, materials, process requirements, images
+- **Labels** - Approved/pending labels with artwork and photos
+- **Test Reports** - Lab test reports with results and expiry tracking
+- **Certifications** - Buyer-specific and company certifications
+- **Packaging** - DWP specs, consumer packages, unit load, packaging instructions
+- **Documents** - Technical documents, buyer agreements
+- **Photos** - Product photography gallery
+
+## Data Sources (Firebase Collections)
+
+| Collection | Purpose |
+|------------|---------|
+| `inspection_schedules` | Inspection calendar data |
+| `orders/data/orders` | Order details with line items |
+| `ops_no` | OPS number registry |
+| `pdoc` | Product documents (labels, tests, etc.) |
+| `dwp` | Packaging specifications |
+| `tedForms` | Technical execution documents |
+| `buyer_certifications` | Buyer-specific certifications |
+| `company_certifications` | Company-wide certifications |
+| `buyers` | Buyer details (packaging instructions) |
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `FIREBASE_PROJECT_ID` | `easternmillscom` |
+| `FIREBASE_CLIENT_EMAIL` | Firebase service account email |
+| `FIREBASE_PRIVATE_KEY` | Firebase service account private key |
+| `QC_APP_PIN` | PIN code for app access (default: `1234`) |
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/verify-pin` | POST | Verify PIN code |
+| `/api/inspections` | GET | List inspections (company, startDate, endDate) |
+| `/api/inspections/:id/complete` | POST | Mark inspection complete |
+| `/api/inspections/:id` | PUT | Update inspection (reschedule) |
+| `/api/ops/:opsNo` | GET | Get full OPS details with order & TED |
+| `/api/product-docs/:buyerCode/:articleCode` | GET | Get full product documentation |
+| `/api/qc-reports/:opsNo` | GET | Get QC reports for an OPS |
+| `/api/buyers` | GET | List all buyers |
+
+## Project Structure
+
+```
+em-qc-dashboard/
+├── src/
+│   ├── components/
+│   │   ├── PinEntry.tsx              # PIN authentication
+│   │   ├── InspectionCalendar.tsx    # 2-week grid calendar
+│   │   ├── DayColumn.tsx             # Single day column
+│   │   ├── InspectionCard.tsx        # Compact inspection card
+│   │   ├── InspectionDetailModal.tsx # OPS detail with products
+│   │   ├── OpsDetailView.tsx         # Order details card
+│   │   └── ProductDetailModal.tsx    # Full product documentation
+│   ├── hooks/
+│   │   └── useApi.ts                 # React Query hooks
+│   ├── lib/
+│   │   └── utils.ts                  # Utility functions
+│   ├── types/
+│   │   └── index.ts                  # TypeScript types
+│   ├── App.tsx                       # Main app with company tabs
+│   ├── main.tsx                      # Entry point
+│   └── index.css                     # Tailwind CSS
+├── netlify/
+│   └── functions/
+│       └── api.mts                   # Serverless API
+├── netlify.toml                      # Netlify config
+├── vite.config.ts                    # Vite config
+└── package.json
+```
+
+## Local Development
+
+```bash
+cd "/Users/abdul/Documents/Eastern Mills/FORMS/Quality:Compliance Dashboard"
+npm install
+npm run dev
+
+# In another terminal (for API):
+netlify dev
+```
+
+## Deployment
+
+Push to GitHub, Netlify auto-deploys.
+
+Set environment variables in Netlify dashboard:
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `QC_APP_PIN`
+
+## Related Apps
+
+| App | Purpose |
+|-----|---------|
+| **Orders** (em-orders.netlify.app) | Where merchants schedule inspections |
+| **Inspection Calendar** (em-inspection-calendar.netlify.app) | Simple inspection calendar |
+| **TED** (em-ted.netlify.app) | Technical execution documents |
+
+## Key Differences from Inspection Calendar App
+
+This QC Dashboard is an **enhanced version** of the Inspection Calendar:
+
+| Feature | Inspection Calendar | QC Dashboard |
+|---------|---------------------|--------------|
+| Calendar view | 2-week grid | 2-week grid |
+| Company filter | EMPL/EHI tabs | All/EMPL/EHI tabs |
+| Mark complete | ✅ | ✅ |
+| OPS details | Basic | Full order details |
+| Product list | Simple | Clickable products |
+| Product docs | Links only | Full documentation modal |
+| TED integration | Link to TED app | Embedded TED view |
+| Labels/Tests | Not shown | Full management |
+| Certifications | Not shown | Full view |
+| Packaging specs | Not shown | Full DWP details |
+
+## User Flow
+
+1. **Login** - Enter 4-digit PIN
+2. **View Calendar** - See 2-week inspection schedule
+3. **Filter by Company** - Click All/EMPL/EHI tabs
+4. **Click Inspection** - View OPS details and products
+5. **Click Product** - Access all documentation:
+   - Review TED for technical specs
+   - Check labels are approved
+   - Verify test reports are valid
+   - Confirm certifications are current
+   - Review packaging instructions
+6. **Conduct Inspection** - Use documentation to verify product
+7. **Mark Complete** - Click "Mark as Complete" when done
+
+## Notes
+
+- PIN is stored in localStorage for session persistence
+- Data refreshes every 60 seconds automatically
+- All data is read from shared Firebase collections (same as Orders app)
+- This app is read-only except for marking inspections complete

@@ -155,10 +155,42 @@ export default async (request: Request, context: Context) => {
         ...doc.data()
       }))
 
-      // Sort by inspectionDate
-      inspections.sort((a: any, b: any) => a.inspectionDate.localeCompare(b.inspectionDate))
+      // Fetch fresh pcs/sqm from actual orders
+      const enrichedInspections = await Promise.all(
+        inspections.map(async (inspection: any) => {
+          if (inspection.orderId) {
+            try {
+              const orderDoc = await database
+                .collection('orders')
+                .doc('data')
+                .collection('orders')
+                .doc(inspection.orderId)
+                .get()
 
-      return jsonResponse(inspections)
+              if (orderDoc.exists) {
+                const orderData = orderDoc.data()
+                const items = orderData?.items || []
+                // Calculate fresh totals from order items
+                const totalPcs = items.reduce((sum: number, item: any) => sum + (item.qty || 0), 0)
+                const totalSqm = items.reduce((sum: number, item: any) => sum + (item.sqm || 0), 0)
+                return {
+                  ...inspection,
+                  totalPcs,
+                  totalSqm
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching order for inspection:', inspection.id, err)
+            }
+          }
+          return inspection
+        })
+      )
+
+      // Sort by inspectionDate
+      enrichedInspections.sort((a: any, b: any) => a.inspectionDate.localeCompare(b.inspectionDate))
+
+      return jsonResponse(enrichedInspections)
     }
 
     // === GET /ops/:opsNo - Full OPS details with order, items, TED, merchant ===

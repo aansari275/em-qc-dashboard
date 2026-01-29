@@ -50,32 +50,44 @@ function errorResponse(message: string, status = 400) {
   return jsonResponse({ error: message }, status)
 }
 
-// OPS number format variations
+// OPS number format variations - handles multiple formats:
+// EM-25-747, 25-747, EM25747, OPS-25747, etc.
 function getOpsVariations(opsNo: string): string[] {
   const variations: string[] = [opsNo]
   const numbersOnly = opsNo.replace(/[^0-9]/g, '')
 
-  if (opsNo.match(/^\d+-\d+$/)) {
-    const withoutDash = opsNo.replace('-', '')
-    variations.push(`OPS-${withoutDash}`)
-    variations.push(`EM-${opsNo}`)
-    variations.push(withoutDash)
+  // Extract year and rest (e.g., from "EM-25-747" get year=25, rest=747)
+  let year = ''
+  let rest = ''
+
+  // Pattern: EM-25-747 or 25-747
+  const dashMatch = opsNo.match(/(?:EM-)?(\d{2})-(\d+)/)
+  if (dashMatch) {
+    year = dashMatch[1]
+    rest = dashMatch[2]
+  }
+  // Pattern: EM25747 or OPS-25747
+  else if (numbersOnly.length >= 4) {
+    year = numbersOnly.substring(0, 2)
+    rest = numbersOnly.substring(2)
   }
 
-  if (opsNo.startsWith('OPS-')) {
-    const num = opsNo.replace('OPS-', '')
-    if (num.length >= 4) {
-      const year = num.substring(0, 2)
-      const rest = num.substring(2)
-      variations.push(`${year}-${rest}`)
-    }
-    variations.push(num)
+  if (year && rest) {
+    // Generate all possible formats
+    variations.push(`${year}-${rest}`)           // 25-747
+    variations.push(`EM-${year}-${rest}`)        // EM-25-747
+    variations.push(`EM${year}${rest}`)          // EM25747 (normalized format)
+    variations.push(`OPS-${year}${rest}`)        // OPS-25747
+    variations.push(`${year}${rest}`)            // 25747
+    variations.push(`EM-${year}${rest}`)         // EM-25747 (no second dash)
   }
 
+  // Also try with just the original stripped of prefixes
   if (opsNo.startsWith('EM-')) {
-    const withoutEM = opsNo.replace('EM-', '')
-    variations.push(withoutEM)
-    variations.push(`OPS-${withoutEM.replace('-', '')}`)
+    variations.push(opsNo.replace('EM-', ''))
+  }
+  if (opsNo.startsWith('OPS-')) {
+    variations.push(opsNo.replace('OPS-', ''))
   }
 
   return [...new Set(variations)]
@@ -149,11 +161,13 @@ export default async (request: Request, context: Context) => {
       return jsonResponse(inspections)
     }
 
-    // === GET /ops/:opsNo - Full OPS details with order, items, TED ===
+    // === GET /ops/:opsNo - Full OPS details with order, items, TED, merchant ===
     const opsMatch = path.match(/^\/ops\/(.+)$/)
     if (opsMatch && method === 'GET') {
       const opsNo = decodeURIComponent(opsMatch[1])
       const variations = getOpsVariations(opsNo)
+
+      console.log('Looking up OPS:', opsNo, 'Variations:', variations)
 
       let opsData: any = null
       let orderId: string | null = null
@@ -169,6 +183,7 @@ export default async (request: Request, context: Context) => {
           const opsDoc = opsQuery.docs[0]
           opsData = { id: opsDoc.id, ...opsDoc.data() }
           orderId = opsData.sourceId || null
+          console.log('Found OPS in ops_no collection:', variation, 'orderId:', orderId)
           break
         }
       }
@@ -183,6 +198,7 @@ export default async (request: Request, context: Context) => {
 
           if (!orderQuery.empty) {
             orderId = orderQuery.docs[0].id
+            console.log('Found order by salesNo:', variation, 'orderId:', orderId)
             break
           }
         }
@@ -191,6 +207,7 @@ export default async (request: Request, context: Context) => {
       let orderData: any = null
       let items: any[] = []
       let tedForms: any = {}
+      let merchantName: string | null = null
 
       if (orderId) {
         const orderDoc = await database.collection('orders').doc('data').collection('orders').doc(orderId).get()
@@ -198,6 +215,34 @@ export default async (request: Request, context: Context) => {
         if (orderDoc.exists) {
           orderData = { id: orderDoc.id, ...orderDoc.data() }
           items = orderData.items || []
+
+          // Fetch merchant name from buyers collection → merchants collection
+          const buyerCode = orderData.buyerCode || orderData.customerCode
+          if (buyerCode) {
+            // Try to find buyer by code
+            const buyerQuery = await database.collection('buyers')
+              .where('code', '==', buyerCode)
+              .limit(1)
+              .get()
+
+            if (!buyerQuery.empty) {
+              const buyerData = buyerQuery.docs[0].data()
+              const merchantId = buyerData.primaryMerchantId
+
+              if (merchantId) {
+                // Fetch merchant name
+                const merchantDoc = await database.collection('merchants').doc(merchantId).get()
+                if (merchantDoc.exists) {
+                  merchantName = merchantDoc.data()?.name || null
+                }
+              }
+            }
+          }
+
+          // Also check if merchant is directly on order
+          if (!merchantName && orderData.merchantCode) {
+            merchantName = orderData.merchantCode
+          }
 
           // Fetch TED forms for line items
           const tedPromises = items.map(async (item: any) => {
@@ -233,6 +278,7 @@ export default async (request: Request, context: Context) => {
         ops: opsData,
         order: orderData,
         tedForms,
+        merchantName,
       })
     }
 

@@ -448,6 +448,7 @@ export interface ProductWithDocs {
 // ============== API Response Types ==============
 
 export interface OpsDetailsResponse {
+  merchantName?: string
   opsNo: string
   ops: OpsNo | null
   order: Order | null

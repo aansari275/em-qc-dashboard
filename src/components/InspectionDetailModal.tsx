@@ -121,28 +121,28 @@ export function InspectionDetailModal({ inspection, onClose }: InspectionDetailM
                   )}
                 </div>
 
-                {/* Quantity */}
+                {/* Quantity - prioritize order data over inspection data */}
                 <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                   <div className="flex items-center gap-2 text-purple-600 mb-2">
                     <Package className="w-4 h-4" />
                     <span className="text-xs font-medium uppercase">Quantity</span>
                   </div>
                   <p className="text-lg font-bold text-purple-800">
-                    {inspection.totalPcs} pcs
+                    {order?.totalPcs || inspection.totalPcs || 0} pcs
                   </p>
                   <p className="text-sm text-purple-600">
-                    {inspection.totalSqm?.toFixed(2)} sqm
+                    {(order?.totalSqm || inspection.totalSqm || 0).toFixed(2)} sqm
                   </p>
                 </div>
 
-                {/* Merchant */}
+                {/* Merchant - use merchantName from API or fallback to inspection */}
                 <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
                   <div className="flex items-center gap-2 text-amber-600 mb-2">
                     <User className="w-4 h-4" />
                     <span className="text-xs font-medium uppercase">Merchant</span>
                   </div>
                   <p className="text-lg font-bold text-amber-800">
-                    {inspection.merchantCode}
+                    {opsData?.merchantName || order?.merchantCode || inspection.merchantCode || '—'}
                   </p>
                   {order?.assistantMerchantCode && (
                     <p className="text-sm text-amber-600">

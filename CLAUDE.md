@@ -7,7 +7,9 @@ Quality Control Dashboard with Inspection Calendar and full product documentatio
 | Environment | URL |
 |-------------|-----|
 | **Production** | https://em-qc-dashboard.netlify.app |
+| **Netlify Dashboard** | https://app.netlify.com/projects/em-qc-dashboard |
 | **GitHub** | https://github.com/aansari275/em-qc-dashboard |
+| **Site ID** | 4467c7c7-de34-4b36-8a39-0e9e6828bde4 |
 
 ## Purpose
 

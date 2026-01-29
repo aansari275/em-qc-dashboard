@@ -158,8 +158,11 @@ export default async (request: Request, context: Context) => {
       // Fetch fresh pcs/sqm from actual orders
       const enrichedInspections = await Promise.all(
         inspections.map(async (inspection: any) => {
-          if (inspection.orderId) {
-            try {
+          try {
+            let orderData: any = null
+
+            // First try by orderId if available
+            if (inspection.orderId) {
               const orderDoc = await database
                 .collection('orders')
                 .doc('data')
@@ -168,20 +171,43 @@ export default async (request: Request, context: Context) => {
                 .get()
 
               if (orderDoc.exists) {
-                const orderData = orderDoc.data()
-                const items = orderData?.items || []
-                // Calculate fresh totals from order items
-                const totalPcs = items.reduce((sum: number, item: any) => sum + (item.qty || 0), 0)
-                const totalSqm = items.reduce((sum: number, item: any) => sum + (item.sqm || 0), 0)
-                return {
-                  ...inspection,
-                  totalPcs,
-                  totalSqm
+                orderData = orderDoc.data()
+              }
+            }
+
+            // If no order found by orderId, look up by opsNo
+            if (!orderData && inspection.opsNo) {
+              const variations = getOpsVariations(inspection.opsNo)
+
+              for (const variation of variations) {
+                const orderQuery = await database
+                  .collection('orders')
+                  .doc('data')
+                  .collection('orders')
+                  .where('salesNo', '==', variation)
+                  .limit(1)
+                  .get()
+
+                if (!orderQuery.empty) {
+                  orderData = orderQuery.docs[0].data()
+                  break
                 }
               }
-            } catch (err) {
-              console.error('Error fetching order for inspection:', inspection.id, err)
             }
+
+            if (orderData) {
+              const items = orderData.items || []
+              // Calculate fresh totals from order items
+              const totalPcs = items.reduce((sum: number, item: any) => sum + (item.qty || 0), 0)
+              const totalSqm = items.reduce((sum: number, item: any) => sum + (item.sqm || 0), 0)
+              return {
+                ...inspection,
+                totalPcs,
+                totalSqm
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching order for inspection:', inspection.id, err)
           }
           return inspection
         })

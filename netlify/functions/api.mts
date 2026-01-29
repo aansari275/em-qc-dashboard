@@ -172,23 +172,43 @@ export default async (request: Request, context: Context) => {
       let opsData: any = null
       let orderId: string | null = null
 
-      // Try to find in ops_no collection
+      // FIRST: Try to get orderId directly from inspection_schedules
+      // This is the most reliable method since inspections store the direct reference
       for (const variation of variations) {
-        const opsQuery = await database.collection('ops_no')
+        const inspectionQuery = await database.collection('inspection_schedules')
           .where('opsNo', '==', variation)
           .limit(1)
           .get()
 
-        if (!opsQuery.empty) {
-          const opsDoc = opsQuery.docs[0]
-          opsData = { id: opsDoc.id, ...opsDoc.data() }
-          orderId = opsData.sourceId || null
-          console.log('Found OPS in ops_no collection:', variation, 'orderId:', orderId)
-          break
+        if (!inspectionQuery.empty) {
+          const inspectionData = inspectionQuery.docs[0].data()
+          if (inspectionData.orderId) {
+            orderId = inspectionData.orderId
+            console.log('Found orderId from inspection_schedules:', variation, 'orderId:', orderId)
+            break
+          }
         }
       }
 
-      // If not found in ops_no, try orders by salesNo
+      // SECOND: Try to find in ops_no collection
+      if (!orderId) {
+        for (const variation of variations) {
+          const opsQuery = await database.collection('ops_no')
+            .where('opsNo', '==', variation)
+            .limit(1)
+            .get()
+
+          if (!opsQuery.empty) {
+            const opsDoc = opsQuery.docs[0]
+            opsData = { id: opsDoc.id, ...opsDoc.data() }
+            orderId = opsData.sourceId || null
+            console.log('Found OPS in ops_no collection:', variation, 'orderId:', orderId)
+            break
+          }
+        }
+      }
+
+      // THIRD: Try orders by salesNo
       if (!orderId) {
         for (const variation of variations) {
           const orderQuery = await database.collection('orders').doc('data').collection('orders')

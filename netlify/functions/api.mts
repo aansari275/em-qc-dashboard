@@ -197,8 +197,8 @@ export default async (request: Request, context: Context) => {
 
             if (orderData) {
               const items = orderData.items || []
-              // Calculate fresh totals from order items
-              const totalPcs = items.reduce((sum: number, item: any) => sum + (item.qty || 0), 0)
+              // Calculate fresh totals from order items (field is 'pcs' not 'qty')
+              const totalPcs = items.reduce((sum: number, item: any) => sum + (item.pcs || item.qty || 0), 0)
               const totalSqm = items.reduce((sum: number, item: any) => sum + (item.sqm || 0), 0)
               return {
                 ...inspection,

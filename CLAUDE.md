@@ -153,7 +153,7 @@ Set environment variables in Netlify dashboard:
 | App | Purpose |
 |-----|---------|
 | **Orders** (em-orders.netlify.app) | Where merchants schedule inspections |
-| **Inspection Calendar** (em-inspection-calendar.netlify.app) | Simple inspection calendar |
+| **Inspection Calendar** (em-inspection-calendar.netlify.app) | Redirects here (301) |
 | **TED** (em-ted.netlify.app) | Technical execution documents |
 
 ## Key Differences from Inspection Calendar App
@@ -194,3 +194,14 @@ This QC Dashboard is an **enhanced version** of the Inspection Calendar:
 - Data refreshes every 60 seconds automatically
 - All data is read from shared Firebase collections (same as Orders app)
 - This app is read-only except for marking inspections complete
+
+## Data Enrichment
+
+The `/api/inspections` endpoint enriches inspection cards with fresh data from actual orders:
+
+1. **Inspection schedules** may have stale `totalPcs`/`totalSqm` (captured at scheduling time)
+2. API looks up each order by `orderId` first, then by `opsNo` (using variations like `25-693`, `EM-25-693`)
+3. Calculates fresh totals from order items: `pcs` and `sqm` fields
+4. Returns enriched data so cards always show current order quantities
+
+This ensures calendar cards match the modal's order details.

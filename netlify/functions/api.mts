@@ -136,6 +136,35 @@ export default async (request: Request, context: Context) => {
       const company = url.searchParams.get('company')
       const startDate = url.searchParams.get('startDate')
       const endDate = url.searchParams.get('endDate')
+      const overdue = url.searchParams.get('overdue')
+
+      // Handle overdue query - past dates, still scheduled
+      if (overdue === 'true') {
+        const today = new Date().toISOString().split('T')[0]
+
+        let overdueQuery: FirebaseFirestore.Query = database.collection(INSPECTIONS_COLLECTION)
+          .where('status', '==', 'scheduled')
+          .where('inspectionDate', '<', today)
+          .orderBy('inspectionDate', 'desc')
+          .limit(50)
+
+        if (company && company !== 'all') {
+          overdueQuery = database.collection(INSPECTIONS_COLLECTION)
+            .where('inspectionCompany', '==', company)
+            .where('status', '==', 'scheduled')
+            .where('inspectionDate', '<', today)
+            .orderBy('inspectionDate', 'desc')
+            .limit(50)
+        }
+
+        const overdueSnapshot = await overdueQuery.get()
+        const overdueInspections = overdueSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+
+        return jsonResponse(overdueInspections)
+      }
 
       if (!startDate || !endDate) {
         return errorResponse('startDate and endDate are required')

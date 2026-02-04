@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#14b8a6"/>
+
+  <!-- Checkmark Icon -->
+  <g transform="translate(256, 240)">
+    <!-- Circle background -->
+    <circle cx="0" cy="0" r="140" fill="white" fill-opacity="0.2"/>
+
+    <!-- Checkmark -->
+    <path
+      d="M-70 10 L-20 60 L80 -50"
+      stroke="white"
+      stroke-width="28"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      fill="none"
+    />
+  </g>
+
+  <!-- QC text -->
+  <text
+    x="256"
+    y="450"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="64"
+    font-weight="bold"
+    fill="white"
+    fill-opacity="0.9"
+    text-anchor="middle"
+  >QC</text>
+</svg>

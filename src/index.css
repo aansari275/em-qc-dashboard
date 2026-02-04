@@ -18,6 +18,57 @@ body {
   background-color: #f1f5f9;
 }
 
+/* PWA Standalone Mode */
+@media (display-mode: standalone) {
+  body {
+    /* Safe area for notched devices */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent bounce scrolling on the whole page */
+  html, body {
+    overscroll-behavior: none;
+  }
+
+  /* Fix for 100vh on mobile Safari */
+  .h-screen {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+/* Tap highlight for touch feedback */
+.tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.1s ease-in-out;
+}
+
+.tap-highlight:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Smooth scrolling */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -46,6 +97,19 @@ body {
 *:focus-visible {
   outline: 2px solid #14b8a6;
   outline-offset: 2px;
+}
+
+/* Prevent text selection on interactive elements */
+button, a, .no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Animation utilities */
@@ -79,9 +143,35 @@ body {
   animation: slideUp 0.3s ease-out;
 }
 
+@keyframes slideUpMobile {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUpMobile {
+  animation: slideUpMobile 0.3s ease-out;
+}
+
 /* Modal backdrop */
 .modal-backdrop {
   backdrop-filter: blur(4px);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Print styles */

@@ -80,6 +80,29 @@ export function useInspections(
   })
 }
 
+// Fetch overdue inspections (past dates, still scheduled)
+export function useOverdueInspections(company: 'EMPL' | 'EHI' | 'all') {
+  return useQuery({
+    queryKey: ['inspections', 'overdue', company],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        company,
+        overdue: 'true'
+      })
+
+      const res = await fetchWithAuth(`${API_BASE}/inspections?${params}`)
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch overdue inspections')
+      }
+
+      return res.json() as Promise<InspectionSchedule[]>
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // 1 minute
+  })
+}
+
 export function useMarkComplete() {
   const queryClient = useQueryClient()
 

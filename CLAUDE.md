@@ -249,3 +249,34 @@ The `/api/inspections` endpoint enriches inspection cards with fresh data from a
 4. Returns enriched data so cards always show current order quantities
 
 This ensures calendar cards match the modal's order details.
+
+## Firestore Indexes
+
+The following composite indexes are required on the `inspection_schedules` collection:
+
+### 1. Company + Date Range Query
+For fetching inspections by company within a date range.
+
+| Field | Order |
+|-------|-------|
+| `inspectionCompany` | Ascending |
+| `inspectionDate` | Ascending |
+
+### 2. Overdue Query (with company filter)
+For fetching overdue inspections filtered by company.
+
+| Field | Order |
+|-------|-------|
+| `inspectionCompany` | Ascending |
+| `status` | Ascending |
+| `inspectionDate` | Descending |
+
+### 3. Overdue Query (all companies)
+For fetching all overdue inspections without company filter.
+
+| Field | Order |
+|-------|-------|
+| `status` | Ascending |
+| `inspectionDate` | Descending |
+
+**Note:** If you see a "requires an index" error, click the link in the error message to create the index in Firebase Console. Indexes take 2-3 minutes to build.
